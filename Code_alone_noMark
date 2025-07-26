@@ -1,0 +1,251 @@
+import kagglehub
+path = kagglehub.dataset_download("preetviradiya/covid19-radiography-dataset")
+print("Path to dataset files:", path)
+
+import shutil
+import os
+source_path = "/root/.cache/kagglehub/datasets/preetviradiya/covid19-radiography-dataset/versions/2"
+destination_path = "/content/covid_dataset"
+os.makedirs(destination_path, exist_ok=True)
+shutil.copytree(source_path, destination_path, dirs_exist_ok=True)
+print("Dataset moved to:", destination_path)
+
+import os
+import shutil
+SOURCE_DIR = "/content/covid_dataset/COVID-19_Radiography_Dataset/COVID-19_Radiography_Dataset"
+DEST_DIR = "/content/selected_dataset"
+os.makedirs(DEST_DIR, exist_ok=True)
+categories = [cat for cat in os.listdir(SOURCE_DIR) if os.path.isdir(os.path.join(SOURCE_DIR, cat))]
+print(" Available Categories:\n")
+for i, category in enumerate(categories):
+    print(f"{i+1}. {category}")
+
+selected_counts = {}
+total_selected = 0
+print("\n Enter number of images to copy from each category:")
+for category in categories:
+    source_path = os.path.join(SOURCE_DIR, category)
+    all_images = [f for f in os.listdir(source_path) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+    max_images = len(all_images)
+    while True:
+        try:
+            count = int(input(f"➡ {category} (max {max_images}): "))
+            if 0 <= count <= max_images:
+                selected_counts[category] = count
+                total_selected += count
+                break
+            else:
+                print(f" Please enter between 0 and {max_images}")
+        except:
+            print(" Invalid input, try again.")
+print("\n Copying selected images...")
+for category, count in selected_counts.items():
+    src_folder = os.path.join(SOURCE_DIR, category)
+    dst_folder = os.path.join(DEST_DIR, category)
+    os.makedirs(dst_folder, exist_ok=True)
+    images = [f for f in os.listdir(src_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg'))][:count]
+    for img in images:
+        shutil.copy(os.path.join(src_folder, img), os.path.join(dst_folder, img))
+print("\n All selected images copied to:", DEST_DIR)
+print("\n📝 Summary:")
+for cat, count in selected_counts.items():
+    print(f" {cat:<20} ➤ {count} images copied")
+print(f"\n Total images copied: {total_selected}")
+
+import os
+import cv2
+import random
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+DATA_DIR = "/content/selected_dataset"
+CATEGORIES = ['COVID', 'Lung_Opacity', 'Normal', 'Viral Pneumonia']
+IMG_SIZE = 150
+data = []
+def preprocess_image(img_path):
+    img = cv2.imread(img_path)
+    if img is None:
+        return None, None
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    clahe_img = clahe.apply(gray)
+    median = cv2.medianBlur(clahe_img, 3)
+    resized = cv2.resize(median, (IMG_SIZE, IMG_SIZE))
+    normalized = resized / 255.0
+    return img, normalized
+for label, category in enumerate(CATEGORIES):
+    path = os.path.join(DATA_DIR, category)
+    for img_file in os.listdir(path):
+        img_path = os.path.join(path, img_file)
+        original, processed = preprocess_image(img_path)
+        if processed is not None:
+            data.append((processed, label))
+random.shuffle(data)
+X, y = zip(*data)
+X = np.array(X).reshape(-1, IMG_SIZE, IMG_SIZE, 1)
+y = np.array(y)
+with open("x.pickle", "wb") as f:
+    pickle.dump(X, f)
+with open("y.pickle", "wb") as f:
+    pickle.dump(y, f)
+print("✅ Saved enhanced x.pickle and y.pickle")
+
+sample_index = random.randint(0, len(data)-1)
+category = CATEGORIES[y[sample_index]]
+original_sample_path = os.path.join(DATA_DIR, category, os.listdir(os.path.join(DATA_DIR, category))[0])
+original_img = cv2.imread(original_sample_path)
+original_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
+original_img_resized = cv2.resize(original_img, (IMG_SIZE, IMG_SIZE))
+_, preprocessed_img = preprocess_image(original_sample_path)
+plt.figure(figsize=(5,4))
+plt.subplot(1,2,1)
+plt.imshow(original_img_resized)
+plt.title("Original Image (Resized)")
+plt.axis("off")
+plt.subplot(1,2,2)
+plt.imshow(preprocessed_img, cmap='gray')
+plt.title("Preprocessed Image")
+plt.axis("off")
+plt.show()
+
+import os
+import pickle
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import cv2
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.applications import ResNet50, resnet50
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Flatten, Dense, Dropout
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+IMG_SIZE = 150
+CATEGORIES = ['COVID', 'Lung_Opacity', 'Normal', 'Viral Pneumonia']
+with open("categories.json", "w") as f:
+    json.dump(CATEGORIES, f)
+with open("x.pickle", "rb") as f:
+    X = pickle.load(f)
+with open("y.pickle", "rb") as f:
+    y = pickle.load(f)
+X_rgb = np.repeat(X, 3, axis=3)
+X_rgb_uint8 = (X_rgb * 255).astype(np.uint8)
+X_preprocessed = resnet50.preprocess_input(X_rgb_uint8)
+num_classes = len(CATEGORIES)
+y_cat = to_categorical(y, num_classes)
+X_train, X_test, y_train, y_test = train_test_split(
+    X_preprocessed, y_cat, test_size=0.2, random_state=42, stratify=y)
+datagen = ImageDataGenerator(
+    rotation_range=15,
+    zoom_range=0.1,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    horizontal_flip=True
+)
+datagen.fit(X_train)
+resnet_base = ResNet50(weights='imagenet', include_top=False, input_shape=(IMG_SIZE, IMG_SIZE, 3))
+resnet_base.trainable = False
+model = Sequential([
+    resnet_base,
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(num_classes, activation='softmax')
+])
+model.compile(optimizer=Adam(learning_rate=1e-4),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+history = model.fit(
+    datagen.flow(X_train, y_train, batch_size=32),
+    validation_data=(X_test, y_test),
+    epochs=30
+)
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.tight_layout()
+plt.show()
+y_pred = model.predict(X_test)
+y_pred_classes = np.argmax(y_pred, axis=1)
+y_true = np.argmax(y_test, axis=1)
+cm = confusion_matrix(y_true, y_pred_classes)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=CATEGORIES,
+            yticklabels=CATEGORIES)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+print("\nClassification Report:")
+print(classification_report(y_true, y_pred_classes, target_names=CATEGORIES, digits=4))
+model.save("resnet50_150_model.h5")
+print("✅ Model saved as resnet50_150_model.h5")
+
+model.summary()
+
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import load_model
+from tensorflow.keras.applications.resnet50 import preprocess_input
+IMG_SIZE = 150
+MODEL_PATH = "/content/resnet50_150_model.h5"
+CATEGORIES = ['COVID', 'Lung_Opacity', 'Normal', 'Viral_Pneumonia']
+def preprocess_image(img_path):
+    img = cv2.imread(img_path)
+    if img is None:
+        print(f"❌ Error loading image: {img_path}")
+        return None, None
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe_img = clahe.apply(gray)
+    median = cv2.medianBlur(clahe_img, 3)
+    resized = cv2.resize(median, (IMG_SIZE, IMG_SIZE))
+    img_3ch = cv2.cvtColor(resized, cv2.COLOR_GRAY2BGR)
+    return img, img_3ch
+
+img_path = input("Enter path to test chest X-ray image: ").strip()
+original_img, img_for_model = preprocess_image(img_path)
+if img_for_model is None:
+    exit("⚠️ Preprocessing failed.")
+img_uint8 = img_for_model.astype(np.uint8)
+processed_input = preprocess_input(img_uint8)
+input_img = processed_input.reshape(1, IMG_SIZE, IMG_SIZE, 3)
+model = load_model(MODEL_PATH)
+prediction = model.predict(input_img)[0]
+predicted_class = CATEGORIES[np.argmax(prediction)]
+plt.figure(figsize=(10, 4))
+plt.subplot(1, 2, 1)
+plt.imshow(cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB))
+plt.title("Original Image")
+plt.axis("off")
+plt.subplot(1, 2, 2)
+plt.imshow(cv2.cvtColor(img_for_model, cv2.COLOR_BGR2RGB))
+plt.title(f"Predicted: {predicted_class}")
+plt.axis("off")
+plt.tight_layout()
+plt.show()
+print("\n Prediction Scores:")
+for i, category in enumerate(CATEGORIES):
+    print(f"{category}: {prediction[i]:.4f}")
+top_3_indices = prediction.argsort()[-3:][::-1]
+print("\n Top 3 Predictions:")
+for idx in top_3_indices:
+    print(f"{CATEGORIES[idx]}: {prediction[idx]:.4f}")
