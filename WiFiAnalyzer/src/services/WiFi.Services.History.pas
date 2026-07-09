@@ -65,6 +65,10 @@ type
 
     /// <summary>Copy of a network's RSSI samples, oldest first.</summary>
     function SeriesFor(const ABssid: string): TArray<TRssiSample>;
+    /// <summary>Signal trend (dBm) over the last ASamples readings: the mean of
+    /// the recent half minus the mean of the older half. Positive == improving.
+    /// Returns 0 when there is too little history.</summary>
+    function TrendFor(const ABssid: string; ASamples: Integer = 8): Double;
     /// <summary>Latest AccessPoint for every known BSSID, strongest first.</summary>
     function KnownNetworks: TArray<TAccessPoint>;
 
@@ -161,6 +165,33 @@ begin
     Result := Series.ToArray
   else
     SetLength(Result, 0);
+end;
+
+function THistoryService.TrendFor(const ABssid: string; ASamples: Integer): Double;
+var
+  S: TArray<TRssiSample>;
+  N, Half, I: Integer;
+  OldSum, NewSum: Double;
+begin
+  Result := 0;
+  S := SeriesFor(ABssid);
+  N := Length(S);
+  if N < 4 then
+    Exit;
+  if (ASamples > 0) and (N > ASamples) then
+  begin
+    // Restrict to the most recent ASamples readings.
+    S := System.Copy(S, N - ASamples, ASamples);
+    N := ASamples;
+  end;
+  Half := N div 2;
+  OldSum := 0;
+  NewSum := 0;
+  for I := 0 to Half - 1 do
+    OldSum := OldSum + S[I].RSSI;
+  for I := N - Half to N - 1 do
+    NewSum := NewSum + S[I].RSSI;
+  Result := (NewSum / Half) - (OldSum / Half);
 end;
 
 function THistoryService.KnownNetworks: TArray<TAccessPoint>;

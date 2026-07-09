@@ -8,12 +8,12 @@ It discovers nearby wireless networks, analyses the RF environment (channel
 load, overlap, recommended channel) and presents a real-time, non-blocking
 dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
 
-> **Status:** Phase 4. A polished Networks grid (multi-column sort, grouping,
-> CSV/Excel export, copy), a **Channel Analysis** tab (spectrum + heatmap) and a
-> **Signal** tab (live RSSI graph, quality/congestion gauges and snapshot
-> comparison), backed by a background scanner, WLAN wrapper, models, RF analysis
-> engine and signal-history/export services.
-> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the roadmap below.
+> **Status:** Feature-complete (Phases 1–5). A polished Networks grid
+> (multi-column sort, grouping, CSV/Excel export, copy), a **Channel Analysis**
+> tab (spectrum + heatmap), a **Signal** tab (live RSSI graph, gauges, snapshot
+> comparison) and a **Dashboard** (summary cards, animated gauges, band/security
+> distribution, signal trend), with coherent light/dark theming and Windows tray
+> notifications — all pure VCL. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Features
 
@@ -36,6 +36,24 @@ dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
   RTL's `System.Zip` — no third-party) of the current filtered/sorted rows.
 - **Copy**: right-click → Copy row / Copy all (or Ctrl+C) as TSV for pasting
   straight into Excel.
+
+**Dashboard tab (Phase 5)**
+- Summary **cards**: connected network, total networks, strongest/weakest
+  signal, most-congested channel, best recommended channel.
+- **Animated gauges**: connected-signal quality and worst-channel congestion,
+  eased toward their targets each scan.
+- **Band** (2.4/5/6 GHz) and **security** (secured/open) distribution bars.
+- **Signal-trend** indicator for the connected network (improving/weakening).
+
+**Theming & notifications (Phase 5)**
+- A shared `WiFi.Services.Theme` palette drives every custom-drawn surface
+  (grid, spectrum, gauges, dashboard), so **light/dark** mode is coherent even
+  without a VCL Style installed; the Dark toggle also applies a VCL Style to the
+  standard controls when one is available.
+- Optional **Windows tray notifications** ("Notify new") when previously unseen
+  networks appear.
+- High-DPI aware (Per-Monitor v2 manifest); all charts use relative layout so
+  they scale with DPI and window size.
 
 **Channels tab (Phase 2)**
 - Per-band (2.4 / 5 / 6 GHz) **spectrum graph**: one arc per network, centered
@@ -97,9 +115,9 @@ WiFiAnalyzer.dpr / .dproj     Application project
 src/api/                      WLAN types + IWlanClient wrapper (native + fake)
 src/models/                   Domain models (TAccessPoint, TScanSnapshot, enums)
 src/engine/                   Channel maths + RF analysis engine
-src/services/                 Scanner thread, OUI lookup, logger, history, export
-src/viewmodels/               Main view-model (filter/sort/metrics)
-src/ui/                       Main form + Channels (spectrum/heatmap) + Signal frames
+src/services/                 Scanner, OUI, logger, history, export, theme
+src/viewmodels/               Main view-model (filter/sort/group/metrics)
+src/ui/                       Main form + Channels + Signal + Dashboard frames
 src/util/                     Formatting + INI settings
 resources/                    Manifest, OUI database
 docs/                         Architecture, class diagram, UI mockups
@@ -114,7 +132,7 @@ tests/                        DUnitX engine tests
 | **2** ✅ | Channel Analysis tab: congestion/overlap/interference + spectrum + heatmap |
 | **3** ✅ | Signal Visualization: live RSSI graph, history, gauges, snapshot comparison |
 | **4** ✅ | Grid polish: multi-sort, grouping, CSV/Excel export, copy rows |
-| 5 | Dashboard cards + animated gauges, full theming, High-DPI/multi-monitor, notifications |
+| **5** ✅ | Dashboard cards + animated gauges, full theming, High-DPI, tray notifications |
 
 All charts, gauges and heatmaps are custom-drawn on `TCanvas`/GDI+ — no chart
 libraries, no copyleft dependencies.

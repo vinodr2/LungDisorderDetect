@@ -79,6 +79,7 @@
         <DCCReference Include="src\services\WiFi.Services.Scanner.pas"/>
         <DCCReference Include="src\services\WiFi.Services.History.pas"/>
         <DCCReference Include="src\services\WiFi.Services.Export.pas"/>
+        <DCCReference Include="src\services\WiFi.Services.Theme.pas"/>
         <DCCReference Include="src\util\WiFi.Util.Format.pas"/>
         <DCCReference Include="src\util\WiFi.Util.Config.pas"/>
         <DCCReference Include="src\viewmodels\WiFi.ViewModels.Main.pas"/>
@@ -89,6 +90,11 @@
         </DCCReference>
         <DCCReference Include="src\ui\WiFi.UI.SignalFrame.pas">
             <Form>frameSignal</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="src\ui\WiFi.UI.DashboardFrame.pas">
+            <Form>frameDashboard</Form>
             <FormType>dfm</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>

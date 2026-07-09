@@ -72,7 +72,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Math, System.DateUtils, WiFi.Util.Format;
+  System.Math, System.DateUtils, WiFi.Util.Format, WiFi.Services.Theme;
 
 const
   LINE_PALETTE: array[0..9] of TColor = (
@@ -312,18 +312,18 @@ begin
     C := Bmp.Canvas;
     C.Font.Assign(pbGraph.Font);
     Area := Rect(0, 0, Bmp.Width, Bmp.Height);
-    C.Brush.Color := clWindow;
+    C.Brush.Color := Theme.Color(trBackground);
     C.FillRect(Area);
 
     Plot := Rect(Area.Left + 44, Area.Top + 12, Area.Right - 12, Area.Bottom - 28);
 
     // Grid + Y (RSSI) labels every 20 dBm.
-    C.Font.Color := clGrayText;
+    C.Font.Color := Theme.Color(trTextSecondary);
     RssiLine := RSSI_TOP;
     while RssiLine >= RSSI_BOTTOM do
     begin
       Y := RssiToY(RssiLine);
-      C.Pen.Color := $00ECECEC;
+      C.Pen.Color := Theme.Color(trGridLine);
       C.Pen.Width := 1;
       C.MoveTo(Plot.Left, Y);
       C.LineTo(Plot.Right, Y);
@@ -358,7 +358,7 @@ begin
 
     if PlottedSeries = 0 then
     begin
-      C.Font.Color := clGrayText;
+      C.Font.Color := Theme.Color(trTextSecondary);
       C.Brush.Style := bsClear;
       C.TextOut(Plot.Left + 12, Plot.Top + 12,
         'Tick one or more networks on the left to plot their signal over time.');
@@ -403,7 +403,7 @@ begin
       C.Brush.Color := Color;
       C.FillRect(Rect(Plot.Right - 150, LegendY, Plot.Right - 138, LegendY + 10));
       C.Brush.Style := bsClear;
-      C.Font.Color := clWindowText;
+      C.Font.Color := Theme.Color(trTextPrimary);
       if AP.Hidden then S := '(' + AP.BSSID + ')' else S := AP.SSID;
       C.TextOut(Plot.Right - 134, LegendY - 2, S);
       C.Brush.Style := bsSolid;
@@ -411,12 +411,12 @@ begin
     end;
 
     C.Pen.Width := 1;
-    C.Pen.Color := $00C0C0C0;
+    C.Pen.Color := Theme.Color(trGridLine);
     C.MoveTo(Plot.Left, Plot.Bottom);
     C.LineTo(Plot.Right, Plot.Bottom);
 
     // X axis: start / end times.
-    C.Font.Color := clGrayText;
+    C.Font.Color := Theme.Color(trTextSecondary);
     C.Brush.Style := bsClear;
     C.TextOut(Plot.Left, Plot.Bottom + 6, FormatDateTime('hh:nn:ss', TMin));
     S := FormatDateTime('hh:nn:ss', TMax);
@@ -474,20 +474,20 @@ begin
   Nx := Cx + Round((Rad - 6) * Cos(Ang));
   Ny := Cy - Round((Rad - 6) * Sin(Ang));
   C.Pen.Width := 2;
-  C.Pen.Color := clWindowText;
+  C.Pen.Color := Theme.Color(trTextPrimary);
   C.MoveTo(Cx, Cy);
   C.LineTo(Nx, Ny);
-  C.Brush.Color := clWindowText;
+  C.Brush.Color := Theme.Color(trTextPrimary);
   C.Ellipse(Cx - 3, Cy - 3, Cx + 3, Cy + 3);
 
   // Readout + caption.
   C.Pen.Width := 1;
   C.Brush.Style := bsClear;
   C.Font.Style := [fsBold];
-  C.Font.Color := clWindowText;
+  C.Font.Color := Theme.Color(trTextPrimary);
   C.TextOut(Cx - C.TextWidth(AReadout) div 2, Cy - 18, AReadout);
   C.Font.Style := [];
-  C.Font.Color := clGrayText;
+  C.Font.Color := Theme.Color(trTextSecondary);
   C.TextOut(Cx - C.TextWidth(ACaption) div 2, Cy + 6, ACaption);
   C.Brush.Style := bsSolid;
 end;
@@ -507,7 +507,7 @@ begin
     C := Bmp.Canvas;
     C.Font.Assign(pbGauges.Font);
     Area := Rect(0, 0, Bmp.Width, Bmp.Height);
-    C.Brush.Color := clWindow;
+    C.Brush.Color := Theme.Color(trBackground);
     C.FillRect(Area);
 
     HasSel := SelectedAP(AP);
@@ -533,7 +533,7 @@ begin
     end
     else
     begin
-      C.Font.Color := clGrayText;
+      C.Font.Color := Theme.Color(trTextSecondary);
       C.Brush.Style := bsClear;
       C.TextOut(Area.Left + 16, Area.Top + 16,
         'Select a network on the left to see its quality and channel congestion.');

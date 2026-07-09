@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 0
   Caption = 'Wi-Fi Analyzer'
   ClientHeight = 561
-  ClientWidth = 1024
+  ClientWidth = 1130
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,7 +18,7 @@ object frmMain: TfrmMain
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 1024
+    Width = 1130
     Height = 44
     Align = alTop
     BevelOuter = bvNone
@@ -123,6 +123,14 @@ object frmMain: TfrmMain
         'Vendor'
         'Channel')
     end
+    object chkNotify: TCheckBox
+      Left = 1008
+      Top = 14
+      Width = 110
+      Height = 17
+      Caption = 'Notify new'
+      TabOrder = 6
+    end
   end
   object pgcMain: TPageControl
     Left = 0
@@ -160,6 +168,10 @@ object frmMain: TfrmMain
     object tsSignal: TTabSheet
       Caption = 'Signal'
       ImageIndex = 2
+    end
+    object tsDashboard: TTabSheet
+      Caption = 'Dashboard'
+      ImageIndex = 3
     end
   end
   object sbMain: TStatusBar
@@ -203,6 +215,13 @@ object frmMain: TfrmMain
   object dlgSave: TSaveDialog
     Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing]
     Left = 740
+    Top = 80
+  end
+  object trayIcon: TTrayIcon
+    Visible = True
+    Hint = 'Wi-Fi Analyzer'
+    BalloonTitle = 'Wi-Fi Analyzer'
+    Left = 660
     Top = 80
   end
 end

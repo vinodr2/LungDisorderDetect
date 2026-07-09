@@ -64,7 +64,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Math;
+  System.Math, WiFi.Services.Theme;
 
 const
   // Distinct, theme-neutral series colours for the arcs.
@@ -181,9 +181,9 @@ end;
 
 procedure TframeChannels.DrawEmpty(ACanvas: TCanvas; const AArea: TRect);
 begin
-  ACanvas.Brush.Color := clWindow;
+  ACanvas.Brush.Color := Theme.Color(trBackground);
   ACanvas.FillRect(AArea);
-  ACanvas.Font.Color := clGrayText;
+  ACanvas.Font.Color := Theme.Color(trTextSecondary);
   ACanvas.Brush.Style := bsClear;
   ACanvas.TextOut(AArea.Left + 16, AArea.Top + 16,
     'No networks on this band yet - scanning...');
@@ -318,7 +318,7 @@ var
     end
     else
     begin
-      ACanvas.Pen.Color := $00E0E0E0;
+      ACanvas.Pen.Color := Theme.Color(trGridLine);
       ACanvas.Pen.Width := 1;
     end;
     ACanvas.MoveTo(X, APlot.Top);
@@ -328,7 +328,7 @@ var
     if AHighlight then
       ACanvas.Font.Color := $0030A030
     else
-      ACanvas.Font.Color := clWindowText;
+      ACanvas.Font.Color := Theme.Color(trTextPrimary);
     ACanvas.Brush.Style := bsClear;
     ACanvas.TextOut(X - ACanvas.TextWidth(Lbl) div 2, AStrip.Bottom + 2, Lbl);
     ACanvas.Brush.Style := bsSolid;
@@ -370,7 +370,7 @@ begin
     Area := Rect(0, 0, Bmp.Width, Bmp.Height);
     ABand := SelectedBand;
 
-    Cv.Brush.Color := clWindow;
+    Cv.Brush.Color := Theme.Color(trBackground);
     Cv.FillRect(Area);
 
     Count := 0;
@@ -397,7 +397,7 @@ begin
       BandRange(ABand, LoMHz, HiMHz);
 
       // Baseline + plot border.
-      Cv.Pen.Color := $00C0C0C0;
+      Cv.Pen.Color := Theme.Color(trGridLine);
       Cv.Pen.Width := 1;
       Cv.MoveTo(Plot.Left, Plot.Bottom);
       Cv.LineTo(Plot.Right, Plot.Bottom);
@@ -407,7 +407,7 @@ begin
       DrawHeatmap(Cv, ABand, Strip, LoMHz, HiMHz);
 
       // Y-axis RSSI ticks.
-      Cv.Font.Color := clGrayText;
+      Cv.Font.Color := Theme.Color(trTextSecondary);
       Cv.Brush.Style := bsClear;
       Cv.TextOut(Area.Left + 4, Plot.Top - 2, IntToStr(RSSI_TOP));
       Cv.TextOut(Area.Left + 4, Plot.Bottom - 8, IntToStr(RSSI_BOTTOM));

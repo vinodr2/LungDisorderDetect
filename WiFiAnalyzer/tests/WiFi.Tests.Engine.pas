@@ -11,9 +11,10 @@ unit WiFi.Tests.Engine;
 interface
 
 uses
-  DUnitX.TestFramework,
+  DUnitX.TestFramework, Vcl.Graphics,
   WiFi.Models, WiFi.Engine.Channels, WiFi.Engine.Analysis, WiFi.Api.Wlan,
-  WiFi.Services.History, WiFi.Services.Export, WiFi.ViewModels.Main;
+  WiFi.Services.History, WiFi.Services.Export, WiFi.Services.Theme,
+  WiFi.ViewModels.Main;
 
 type
   [TestFixture]
@@ -73,6 +74,16 @@ type
 
     [Test]
     procedure Compare_DetectsAddedRemovedChanged;
+
+    [Test]
+    procedure Trend_DetectsImprovingSignal;
+  end;
+
+  [TestFixture]
+  TThemeTests = class
+  public
+    [Test]
+    procedure DarkAndLight_DifferInBackground;
   end;
 
   [TestFixture]
@@ -409,6 +420,44 @@ begin
   end;
 end;
 
+procedure THistoryTests.Trend_DetectsImprovingSignal;
+var
+  Hist: THistoryService;
+  I: Integer;
+  Snap: TScanSnapshot;
+begin
+  Hist := THistoryService.Create;
+  try
+    // Rising RSSI (less negative) over 8 scans -> improving trend (> 0).
+    for I := 0 to 7 do
+    begin
+      Snap := MakeSnapshot([MakeAP('AA:00:00:00:00:01', -80 + I * 2)]);
+      try
+        Hist.RecordSnapshot(Snap);
+      finally
+        Snap.Free;
+      end;
+    end;
+    Assert.IsTrue(Hist.TrendFor('AA:00:00:00:00:01') > 0, 'rising signal trends positive');
+  finally
+    Hist.Free;
+  end;
+end;
+
+{ TThemeTests }
+
+procedure TThemeTests.DarkAndLight_DifferInBackground;
+var
+  Light, Dark: TColor;
+begin
+  Theme.Dark := False;
+  Light := Theme.Color(trBackground);
+  Theme.Dark := True;
+  Dark := Theme.Color(trBackground);
+  Theme.Dark := False; // restore
+  Assert.AreNotEqual(Integer(Light), Integer(Dark), 'themes use distinct backgrounds');
+end;
+
 { TExportTests }
 
 procedure TExportTests.CsvField_QuotesWhenNeeded;
@@ -519,5 +568,6 @@ initialization
   TDUnitX.RegisterTestFixture(THistoryTests);
   TDUnitX.RegisterTestFixture(TExportTests);
   TDUnitX.RegisterTestFixture(TViewModelTests);
+  TDUnitX.RegisterTestFixture(TThemeTests);
 
 end.

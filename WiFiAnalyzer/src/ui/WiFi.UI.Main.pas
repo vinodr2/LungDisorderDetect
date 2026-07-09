@@ -17,13 +17,14 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes,
+  System.Generics.Collections,
   System.UITypes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls,
   Vcl.ExtCtrls, Vcl.Grids, Vcl.ComCtrls, Vcl.Themes, Vcl.Styles,
   Vcl.Menus, Vcl.Dialogs,
   WiFi.Models, WiFi.Util.Format,
   WiFi.ViewModels.Main, WiFi.Services.Scanner, WiFi.Services.Oui,
-  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.Services.Export,
-  WiFi.UI.ChannelsFrame, WiFi.UI.SignalFrame;
+  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.Services.Export, WiFi.Services.Theme,
+  WiFi.UI.ChannelsFrame, WiFi.UI.SignalFrame, WiFi.UI.DashboardFrame;
 
 type
   TfrmMain = class(TForm)
@@ -38,13 +39,16 @@ type
     chkDark: TCheckBox;
     lblGroup: TLabel;
     cboGroup: TComboBox;
+    chkNotify: TCheckBox;
     pgcMain: TPageControl;
     tsNetworks: TTabSheet;
     tsChannels: TTabSheet;
     tsSignal: TTabSheet;
+    tsDashboard: TTabSheet;
     grdNetworks: TDrawGrid;
     sbMain: TStatusBar;
     tmrUi: TTimer;
+    trayIcon: TTrayIcon;
     pmGrid: TPopupMenu;
     mniCopyRow: TMenuItem;
     mniCopyAll: TMenuItem;
@@ -78,6 +82,11 @@ type
     FVM: TMainViewModel;
     FChannels: TframeChannels;
     FSignal: TframeSignal;
+    FDashboard: TframeDashboard;
+    FKnownBssids: TDictionary<string, Boolean>;
+    FNotifyReady: Boolean;
+    procedure NotifyNewNetworks;
+    procedure RethemeAll;
     procedure BuildColumns;
     procedure ConfigureIntervalCombo;
     function CellText(const AAP: TAccessPoint; ACol: Integer): string;
@@ -186,6 +195,15 @@ begin
   FSignal.Align := alClient;
   FSignal.SetHistory(FVM.History);
 
+  // Dashboard tab (Phase 5): summary cards, animated gauges, distributions.
+  FDashboard := TframeDashboard.Create(Self);
+  FDashboard.Parent := tsDashboard;
+  FDashboard.Align := alClient;
+  FDashboard.SetViewModel(FVM);
+
+  FKnownBssids := TDictionary<string, Boolean>.Create;
+  trayIcon.Icon.Assign(Application.Icon);
+
   chkDark.Checked := FConfig.DarkMode;
   ApplyTheme(FConfig.DarkMode);
 
@@ -205,7 +223,42 @@ begin
   FScanner.Free;
   FVM.Free;
   FConfig.Free;
+  FKnownBssids.Free;
   FOui := nil;
+end;
+
+procedure TfrmMain.RethemeAll;
+begin
+  // Every custom-drawn surface reads the Theme palette at paint time.
+  grdNetworks.Invalidate;
+  if FChannels <> nil then FChannels.Invalidate;
+  if FSignal <> nil then FSignal.Invalidate;
+  if FDashboard <> nil then FDashboard.Invalidate;
+end;
+
+procedure TfrmMain.NotifyNewNetworks;
+var
+  AP: TAccessPoint;
+  NewCount: Integer;
+  Nets: TArray<TAccessPoint>;
+begin
+  Nets := FVM.AllNetworks;
+  NewCount := 0;
+  for AP in Nets do
+    if (AP.BSSID <> '') and not FKnownBssids.ContainsKey(AP.BSSID) then
+    begin
+      FKnownBssids.Add(AP.BSSID, True);
+      Inc(NewCount);
+    end;
+
+  // Skip the very first scan (everything is "new" then).
+  if FNotifyReady and chkNotify.Checked and (NewCount > 0) then
+  begin
+    trayIcon.BalloonTitle := 'Wi-Fi Analyzer';
+    trayIcon.BalloonHint := Format('%d new network(s) detected.', [NewCount]);
+    trayIcon.ShowBalloonHint;
+  end;
+  FNotifyReady := True;
 end;
 
 procedure TfrmMain.ConfigureIntervalCombo;
@@ -268,10 +321,10 @@ var
   Rank: Integer;
 begin
   Cv := grdNetworks.Canvas;
-  Cv.Brush.Color := StyleServices.GetSystemColor(clBtnFace);
+  Cv.Brush.Color := Theme.Color(trHeader);
   Cv.FillRect(Rect);
   Cv.Font.Style := [fsBold];
-  Cv.Font.Color := StyleServices.GetSystemColor(clWindowText);
+  Cv.Font.Color := Theme.Color(trTextPrimary);
   Txt := COLUMNS[ACol].Title;
   // Multi-sort badge: direction arrow + priority number (1 = primary key).
   Rank := FVM.SortRank(COLUMNS[ACol].Column);
@@ -302,24 +355,24 @@ begin
   Index := ARow - 1;
   if (Index < 0) or (Index >= FVM.VisibleCount) then
   begin
-    Cv.Brush.Color := StyleServices.GetSystemColor(clWindow);
+    Cv.Brush.Color := Theme.Color(trBackground);
     Cv.FillRect(Rect);
     Exit;
   end;
   AP := FVM.RowData(Index);
 
   if Selected then
-    Cv.Brush.Color := StyleServices.GetSystemColor(clHighlight)
+    Cv.Brush.Color := Theme.Color(trSelection)
   else if AP.Connected then
-    Cv.Brush.Color := StyleServices.GetSystemColor(clInfoBk)
+    Cv.Brush.Color := Theme.Color(trConnected)
   else
-    Cv.Brush.Color := StyleServices.GetSystemColor(clWindow);
+    Cv.Brush.Color := Theme.Color(trBackground);
   Cv.FillRect(Rect);
 
   if Selected then
-    Cv.Font.Color := StyleServices.GetSystemColor(clHighlightText)
+    Cv.Font.Color := Theme.Color(trSelectionText)
   else
-    Cv.Font.Color := StyleServices.GetSystemColor(clWindowText);
+    Cv.Font.Color := Theme.Color(trTextPrimary);
 
   // RSSI column: draw a strength bar sized to quality behind the text.
   if COLUMNS[ACol].Column = gcRSSI then
@@ -349,14 +402,14 @@ var
 begin
   Cv := grdNetworks.Canvas;
   Index := ARow - 1;
-  // A group header spans the row: every cell gets the band colour; the caption
+  // A group header spans the row: every cell gets the header colour; the caption
   // is drawn only in the first column, so it never fights the other cells.
-  Cv.Brush.Color := StyleServices.GetSystemColor(clBtnFace);
+  Cv.Brush.Color := Theme.Color(trHeader);
   Cv.FillRect(Rect);
   if ACol = 0 then
   begin
     Cv.Font.Style := [fsBold];
-    Cv.Font.Color := StyleServices.GetSystemColor(clWindowText);
+    Cv.Font.Color := Theme.Color(trTextPrimary);
     Cv.Brush.Style := bsClear;
     Cv.TextRect(Rect, Rect.Left + CELL_PAD, Rect.Top + 3, FVM.RowGroupCaption(Index));
     Cv.Brush.Style := bsSolid;
@@ -409,6 +462,12 @@ begin
   // Feed the Signal Visualization tab (history is updated inside the VM).
   if FSignal <> nil then
     FSignal.UpdateData(FVM.Report);
+
+  // Feed the Dashboard tab (animates gauges toward the new values).
+  if FDashboard <> nil then
+    FDashboard.UpdateData;
+
+  NotifyNewNetworks;
 
   sbMain.SimpleText := Format('%d networks  •  %d shown  •  adapter: %s  •  last scan %s',
     [FVM.TotalNetworks, Length(FVM.VisibleDataRows),
@@ -486,8 +545,12 @@ const
 var
   Name: string;
 begin
-  // Best-effort: pick the first installed style matching the requested mode.
-  // Full theming (custom palette, animated cards) is a later phase.
+  // Drive the shared palette used by every custom-drawn surface. This themes
+  // the grid, charts, gauges and dashboard regardless of VCL Style availability.
+  Theme.Dark := ADark;
+
+  // Best-effort VCL Style so the standard controls (edits, combos, tabs) follow
+  // suit too; if none is installed the custom surfaces still theme correctly.
   if ADark then
   begin
     for Name in DARK_STYLES do
@@ -500,7 +563,8 @@ begin
       if TStyleManager.TrySetStyle(Name, False) then
         Break;
   end;
-  grdNetworks.Invalidate;
+
+  RethemeAll;
 end;
 
 procedure TfrmMain.tmrUiTimer(Sender: TObject);
