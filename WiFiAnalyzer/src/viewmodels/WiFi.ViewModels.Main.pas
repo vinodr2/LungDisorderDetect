@@ -64,6 +64,8 @@ type
     function BandCount(ABand: TWiFiBand): Integer;
     function SecuredCount: Integer;
     function OpenCount: Integer;
+    /// <summary>A copy of every detected network (all bands, unfiltered).</summary>
+    function AllNetworks: TArray<TAccessPoint>;
 
     property Report: TChannelReport read FReport;
     property SearchText: string read FSearchText write SetSearchText;
@@ -302,6 +304,15 @@ end;
 function TMainViewModel.OpenCount: Integer;
 begin
   Result := FAll.Count - SecuredCount;
+end;
+
+function TMainViewModel.AllNetworks: TArray<TAccessPoint>;
+var
+  I: Integer;
+begin
+  SetLength(Result, FAll.Count);
+  for I := 0 to FAll.Count - 1 do
+    Result[I] := FAll[I];
 end;
 
 end.

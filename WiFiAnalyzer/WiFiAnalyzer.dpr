@@ -26,6 +26,7 @@ uses
   WiFi.Util.Format in 'src\util\WiFi.Util.Format.pas',
   WiFi.Util.Config in 'src\util\WiFi.Util.Config.pas',
   WiFi.ViewModels.Main in 'src\viewmodels\WiFi.ViewModels.Main.pas',
+  WiFi.UI.ChannelsFrame in 'src\ui\WiFi.UI.ChannelsFrame.pas' {frameChannels: TFrame},
   WiFi.UI.Main in 'src\ui\WiFi.UI.Main.pas' {frmMain};
 
 {$R *.res}

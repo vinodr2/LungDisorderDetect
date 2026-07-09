@@ -55,6 +55,9 @@ type
     procedure Counts_APsPerChannel;
 
     [Test]
+    procedure CoChannel_And_Adjacent_Counted;
+
+    [Test]
     procedure FakeClient_ReturnsSeededData;
   end;
 
@@ -204,6 +207,41 @@ begin
         if (S.Band = wb24GHz) and (S.Channel = 1) then
           Ch1Count := S.ApCount;
       Assert.AreEqual(2, Ch1Count, 'two APs on channel 1');
+    finally
+      Report.Free;
+    end;
+  finally
+    Snap.Free;
+    Engine.Free;
+  end;
+end;
+
+procedure TAnalysisTests.CoChannel_And_Adjacent_Counted;
+var
+  Engine: TAnalysisEngine;
+  Snap: TScanSnapshot;
+  Report: TChannelReport;
+  S: TChannelStat;
+  Co, Adj: Integer;
+begin
+  // Two APs on channel 1, one on channel 3 (overlaps channel 1 at 20 MHz).
+  Engine := TAnalysisEngine.Create;
+  Snap := MakeSnapshot([
+    MakeAP('AA:00:00:00:00:01', 1, wb24GHz, -45),
+    MakeAP('AA:00:00:00:00:02', 1, wb24GHz, -50),
+    MakeAP('AA:00:00:00:00:03', 3, wb24GHz, -55)]);
+  try
+    Report := Engine.Analyze(Snap);
+    try
+      Co := -1; Adj := -1;
+      for S in Report.Stats do
+        if (S.Band = wb24GHz) and (S.Channel = 1) then
+        begin
+          Co := S.CoChannelCount;
+          Adj := S.AdjacentCount;
+        end;
+      Assert.AreEqual(2, Co, 'channel 1 has two co-channel APs');
+      Assert.AreEqual(1, Adj, 'channel 3 AP is adjacent to channel 1');
     finally
       Report.Free;
     end;

@@ -80,6 +80,11 @@
         <DCCReference Include="src\util\WiFi.Util.Format.pas"/>
         <DCCReference Include="src\util\WiFi.Util.Config.pas"/>
         <DCCReference Include="src\viewmodels\WiFi.ViewModels.Main.pas"/>
+        <DCCReference Include="src\ui\WiFi.UI.ChannelsFrame.pas">
+            <Form>frameChannels</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="src\ui\WiFi.UI.Main.pas">
             <Form>frmMain</Form>
             <FormType>dfm</FormType>

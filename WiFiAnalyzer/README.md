@@ -8,12 +8,14 @@ It discovers nearby wireless networks, analyses the RF environment (channel
 load, overlap, recommended channel) and presents a real-time, non-blocking
 dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
 
-> **Status:** Phase 1 (foundation). A live, sortable/filterable networks grid
-> backed by a background scanner, WLAN wrapper, models and RF analysis engine.
+> **Status:** Phase 2. A live networks grid plus a **Channel Analysis** tab
+> with a custom-drawn spectrum graph and congestion heatmap, backed by a
+> background scanner, WLAN wrapper, models and RF analysis engine.
 > See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the roadmap below.
 
-## Features (Phase 1)
+## Features
 
+**Networks tab (Phase 1)**
 - Native WLAN discovery via `wlanapi.dll` (BSS list + available networks).
 - SSID, BSSID, vendor (OUI lookup), channel, band, frequency, RSSI, quality,
   PHY, security, connected and hidden-network detection.
@@ -21,9 +23,16 @@ dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
 - Configurable auto-refresh interval and manual **Rescan now**.
 - Owner-drawn virtual grid: search, band filter, click-to-sort any column,
   colour-graded signal bars.
-- Per-channel congestion analysis and a recommended-channel engine
-  (2.4/5/6 GHz), surfaced to later dashboard phases.
 - Basic light/dark theming via VCL Styles.
+
+**Channels tab (Phase 2)**
+- Per-band (2.4 / 5 / 6 GHz) **spectrum graph**: one arc per network, centered
+  on its channel, height by signal, width by channel width; optional fill.
+- **Congestion heatmap** strip: one cell per channel, green (quiet) → red
+  (busy), labelled with utilization percent.
+- Co-channel vs adjacent-channel interference, utilization estimate and the
+  **recommended channel** highlighted on the axis.
+- All rendering is hand-drawn on `TCanvas`/GDI — no chart library.
 
 ## Requirements
 
@@ -69,7 +78,7 @@ src/models/                   Domain models (TAccessPoint, TScanSnapshot, enums)
 src/engine/                   Channel maths + RF analysis engine
 src/services/                 Scanner thread, OUI lookup, logger
 src/viewmodels/               Main view-model (filter/sort/metrics)
-src/ui/                       Main form (owner-drawn grid)
+src/ui/                       Main form (grid) + Channels frame (spectrum/heatmap)
 src/util/                     Formatting + INI settings
 resources/                    Manifest, OUI database
 docs/                         Architecture, class diagram, UI mockups
@@ -81,7 +90,7 @@ tests/                        DUnitX engine tests
 | Phase | Content |
 |-------|---------|
 | **1** ✅ | Foundation: WLAN wrapper, models, engine, scanner, view-model, live grid |
-| 2 | Channel Analysis tab: congestion/overlap/interference + heatmap |
+| **2** ✅ | Channel Analysis tab: congestion/overlap/interference + spectrum + heatmap |
 | 3 | Signal Visualization: live RSSI graph, history, spectrum/overlap, gauges |
 | 4 | Grid polish: multi-sort, grouping, CSV/Excel export, copy rows |
 | 5 | Dashboard cards + animated gauges, full theming, High-DPI/multi-monitor, notifications |

@@ -21,7 +21,7 @@ uses
   Vcl.ExtCtrls, Vcl.Grids, Vcl.ComCtrls, Vcl.Themes, Vcl.Styles,
   WiFi.Models, WiFi.Util.Format,
   WiFi.ViewModels.Main, WiFi.Services.Scanner, WiFi.Services.Oui,
-  WiFi.Api.Wlan, WiFi.Util.Config;
+  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.UI.ChannelsFrame;
 
 type
   TfrmMain = class(TForm)
@@ -34,6 +34,9 @@ type
     cboInterval: TComboBox;
     btnRefresh: TButton;
     chkDark: TCheckBox;
+    pgcMain: TPageControl;
+    tsNetworks: TTabSheet;
+    tsChannels: TTabSheet;
     grdNetworks: TDrawGrid;
     sbMain: TStatusBar;
     tmrUi: TTimer;
@@ -54,6 +57,7 @@ type
     FOui: IOuiVendorService;
     FScanner: TScannerService;
     FVM: TMainViewModel;
+    FChannels: TframeChannels;
     procedure BuildColumns;
     procedure ConfigureIntervalCombo;
     function CellText(const AAP: TAccessPoint; ACol: Integer): string;
@@ -145,6 +149,11 @@ begin
   FScanner.IntervalMs := FConfig.ScanIntervalMs;
   FScanner.OnSnapshot := ScannerSnapshot;
   FScanner.OnError := ScannerError;
+
+  // Channel Analysis tab (Phase 2): a custom-drawn spectrum + heatmap frame.
+  FChannels := TframeChannels.Create(Self);
+  FChannels.Parent := tsChannels;
+  FChannels.Align := alClient;
 
   chkDark.Checked := FConfig.DarkMode;
   ApplyTheme(FConfig.DarkMode);
@@ -320,6 +329,10 @@ begin
   // Keep at least the header + one row so the grid stays valid when empty.
   grdNetworks.RowCount := Max(2, Rows + 1);
   grdNetworks.Invalidate;
+
+  // Feed the Channel Analysis tab with the fresh report + full network list.
+  if FChannels <> nil then
+    FChannels.UpdateData(FVM.Report, FVM.AllNetworks);
 
   sbMain.SimpleText := Format('%d networks  •  %d shown  •  adapter: %s  •  last scan %s',
     [FVM.TotalNetworks, FVM.VisibleCount,

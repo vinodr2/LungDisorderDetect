@@ -100,21 +100,37 @@ object frmMain: TfrmMain
       OnClick = chkDarkClick
     end
   end
-  object grdNetworks: TDrawGrid
+  object pgcMain: TPageControl
     Left = 0
     Top = 44
     Width = 1024
     Height = 498
+    ActivePage = tsNetworks
     Align = alClient
-    ColCount = 12
-    DefaultColWidth = 100
-    DefaultRowHeight = 22
-    FixedCols = 0
-    RowCount = 2
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goThumbTracking]
     TabOrder = 1
-    OnDrawCell = grdNetworksDrawCell
-    OnMouseDown = grdNetworksMouseDown
+    object tsNetworks: TTabSheet
+      Caption = 'Networks'
+      object grdNetworks: TDrawGrid
+        Left = 0
+        Top = 0
+        Width = 1016
+        Height = 468
+        Align = alClient
+        ColCount = 12
+        DefaultColWidth = 100
+        DefaultRowHeight = 22
+        FixedCols = 0
+        RowCount = 2
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goThumbTracking]
+        TabOrder = 0
+        OnDrawCell = grdNetworksDrawCell
+        OnMouseDown = grdNetworksMouseDown
+      end
+    end
+    object tsChannels: TTabSheet
+      Caption = 'Channels'
+      ImageIndex = 1
+    end
   end
   object sbMain: TStatusBar
     Left = 0
