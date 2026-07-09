@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{B2F0A9E4-9C1D-4E7A-8B0C-3D6F1A2E4C90}</ProjectGuid>
+        <ProjectVersion>20.1</ProjectVersion>
+        <FrameworkType>VCL</FrameworkType>
+        <MainSource>WiFiAnalyzer.dpr</MainSource>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <TargetedPlatforms>3</TargetedPlatforms>
+        <AppType>Application</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_UnitSearchPath>src\api;src\models;src\engine;src\services;src\viewmodels;src\ui;src\util;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;Winapi;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_DcuOutput>.\dcu\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_ExeOutput>.\bin\$(Platform)\$(Config)</DCC_ExeOutput>
+        <SanitizedProjectName>WiFiAnalyzer</SanitizedProjectName>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>CompanyName=;FileDescription=Wi-Fi Analyzer;FileVersion=1.0.0.0;InternalName=WiFiAnalyzer;LegalCopyright=;OriginalFilename=WiFiAnalyzer.exe;ProductName=Wi-Fi Analyzer;ProductVersion=1.0.0.0</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="src\models\WiFi.Models.pas"/>
+        <DCCReference Include="src\api\WiFi.Api.WlanTypes.pas"/>
+        <DCCReference Include="src\api\WiFi.Api.Wlan.pas"/>
+        <DCCReference Include="src\engine\WiFi.Engine.Channels.pas"/>
+        <DCCReference Include="src\engine\WiFi.Engine.Analysis.pas"/>
+        <DCCReference Include="src\services\WiFi.Services.Logger.pas"/>
+        <DCCReference Include="src\services\WiFi.Services.Oui.pas"/>
+        <DCCReference Include="src\services\WiFi.Services.Scanner.pas"/>
+        <DCCReference Include="src\util\WiFi.Util.Format.pas"/>
+        <DCCReference Include="src\util\WiFi.Util.Config.pas"/>
+        <DCCReference Include="src\viewmodels\WiFi.ViewModels.Main.pas"/>
+        <DCCReference Include="src\ui\WiFi.UI.Main.pas">
+            <Form>frmMain</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Application</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Source>
+                    <Source Name="MainSource">WiFiAnalyzer.dpr</Source>
+                </Source>
+            </Delphi.Personality>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+</Project>
