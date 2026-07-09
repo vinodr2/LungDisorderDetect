@@ -27,6 +27,8 @@ uses
   WiFi.Engine.Channels in '..\src\engine\WiFi.Engine.Channels.pas',
   WiFi.Engine.Analysis in '..\src\engine\WiFi.Engine.Analysis.pas',
   WiFi.Services.History in '..\src\services\WiFi.Services.History.pas',
+  WiFi.Services.Export in '..\src\services\WiFi.Services.Export.pas',
+  WiFi.ViewModels.Main in '..\src\viewmodels\WiFi.ViewModels.Main.pas',
   WiFi.Tests.Engine in 'WiFi.Tests.Engine.pas';
 
 var

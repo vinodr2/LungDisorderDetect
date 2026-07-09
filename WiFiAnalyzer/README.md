@@ -8,10 +8,11 @@ It discovers nearby wireless networks, analyses the RF environment (channel
 load, overlap, recommended channel) and presents a real-time, non-blocking
 dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
 
-> **Status:** Phase 3. Networks grid, a **Channel Analysis** tab (spectrum +
-> heatmap) and a **Signal** tab (live RSSI graph, quality/congestion gauges and
-> snapshot comparison), backed by a background scanner, WLAN wrapper, models,
-> RF analysis engine and a signal-history service.
+> **Status:** Phase 4. A polished Networks grid (multi-column sort, grouping,
+> CSV/Excel export, copy), a **Channel Analysis** tab (spectrum + heatmap) and a
+> **Signal** tab (live RSSI graph, quality/congestion gauges and snapshot
+> comparison), backed by a background scanner, WLAN wrapper, models, RF analysis
+> engine and signal-history/export services.
 > See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the roadmap below.
 
 ## Features
@@ -25,6 +26,16 @@ dashboard inspired by tools like WiFiInfoView, inSSIDer and Acrylic WiFi.
 - Owner-drawn virtual grid: search, band filter, click-to-sort any column,
   colour-graded signal bars.
 - Basic light/dark theming via VCL Styles.
+
+**Networks grid polish (Phase 4)**
+- **Multi-column sort**: Shift-click headers to add secondary keys; priority
+  badges (▲/▼ + number) show the sort order.
+- **Grouping**: group rows by Band / Security / Vendor / Channel, with group
+  header bands and per-group counts.
+- **Export**: CSV (RFC-4180, UTF-8 BOM) and native **`.xlsx`** (built with the
+  RTL's `System.Zip` — no third-party) of the current filtered/sorted rows.
+- **Copy**: right-click → Copy row / Copy all (or Ctrl+C) as TSV for pasting
+  straight into Excel.
 
 **Channels tab (Phase 2)**
 - Per-band (2.4 / 5 / 6 GHz) **spectrum graph**: one arc per network, centered
@@ -86,7 +97,7 @@ WiFiAnalyzer.dpr / .dproj     Application project
 src/api/                      WLAN types + IWlanClient wrapper (native + fake)
 src/models/                   Domain models (TAccessPoint, TScanSnapshot, enums)
 src/engine/                   Channel maths + RF analysis engine
-src/services/                 Scanner thread, OUI lookup, logger, signal history
+src/services/                 Scanner thread, OUI lookup, logger, history, export
 src/viewmodels/               Main view-model (filter/sort/metrics)
 src/ui/                       Main form + Channels (spectrum/heatmap) + Signal frames
 src/util/                     Formatting + INI settings
@@ -102,7 +113,7 @@ tests/                        DUnitX engine tests
 | **1** ✅ | Foundation: WLAN wrapper, models, engine, scanner, view-model, live grid |
 | **2** ✅ | Channel Analysis tab: congestion/overlap/interference + spectrum + heatmap |
 | **3** ✅ | Signal Visualization: live RSSI graph, history, gauges, snapshot comparison |
-| 4 | Grid polish: multi-sort, grouping, CSV/Excel export, copy rows |
+| **4** ✅ | Grid polish: multi-sort, grouping, CSV/Excel export, copy rows |
 | 5 | Dashboard cards + animated gauges, full theming, High-DPI/multi-monitor, notifications |
 
 All charts, gauges and heatmaps are custom-drawn on `TCanvas`/GDI+ — no chart

@@ -93,11 +93,35 @@ object frmMain: TfrmMain
     object chkDark: TCheckBox
       Left = 730
       Top = 14
-      Width = 100
+      Width = 90
       Height = 17
       Caption = 'Dark mode'
       TabOrder = 4
       OnClick = chkDarkClick
+    end
+    object lblGroup: TLabel
+      Left = 824
+      Top = 15
+      Width = 46
+      Height = 15
+      Caption = 'Group by'
+    end
+    object cboGroup: TComboBox
+      Left = 876
+      Top = 11
+      Width = 120
+      Height = 23
+      Style = csDropDownList
+      ItemIndex = 0
+      TabOrder = 5
+      Text = 'None'
+      OnChange = cboGroupChange
+      Items.Strings = (
+        'None'
+        'Band'
+        'Security'
+        'Vendor'
+        'Channel')
     end
   end
   object pgcMain: TPageControl
@@ -122,8 +146,10 @@ object frmMain: TfrmMain
         FixedCols = 0
         RowCount = 2
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goThumbTracking]
+        PopupMenu = pmGrid
         TabOrder = 0
         OnDrawCell = grdNetworksDrawCell
+        OnKeyDown = grdNetworksKeyDown
         OnMouseDown = grdNetworksMouseDown
       end
     end
@@ -149,6 +175,34 @@ object frmMain: TfrmMain
     Interval = 1000
     OnTimer = tmrUiTimer
     Left = 900
+    Top = 80
+  end
+  object pmGrid: TPopupMenu
+    Left = 820
+    Top = 80
+    object mniCopyRow: TMenuItem
+      Caption = 'Copy row (Ctrl+C)'
+      OnClick = mniCopyRowClick
+    end
+    object mniCopyAll: TMenuItem
+      Caption = 'Copy all rows'
+      OnClick = mniCopyAllClick
+    end
+    object mniSep1: TMenuItem
+      Caption = '-'
+    end
+    object mniExportCsv: TMenuItem
+      Caption = 'Export to CSV...'
+      OnClick = mniExportCsvClick
+    end
+    object mniExportXlsx: TMenuItem
+      Caption = 'Export to Excel...'
+      OnClick = mniExportXlsxClick
+    end
+  end
+  object dlgSave: TSaveDialog
+    Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing]
+    Left = 740
     Top = 80
   end
 end

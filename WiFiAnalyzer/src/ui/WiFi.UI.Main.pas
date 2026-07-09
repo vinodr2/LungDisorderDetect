@@ -19,9 +19,11 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes,
   System.UITypes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls,
   Vcl.ExtCtrls, Vcl.Grids, Vcl.ComCtrls, Vcl.Themes, Vcl.Styles,
+  Vcl.Menus, Vcl.Dialogs,
   WiFi.Models, WiFi.Util.Format,
   WiFi.ViewModels.Main, WiFi.Services.Scanner, WiFi.Services.Oui,
-  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.UI.ChannelsFrame, WiFi.UI.SignalFrame;
+  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.Services.Export,
+  WiFi.UI.ChannelsFrame, WiFi.UI.SignalFrame;
 
 type
   TfrmMain = class(TForm)
@@ -34,6 +36,8 @@ type
     cboInterval: TComboBox;
     btnRefresh: TButton;
     chkDark: TCheckBox;
+    lblGroup: TLabel;
+    cboGroup: TComboBox;
     pgcMain: TPageControl;
     tsNetworks: TTabSheet;
     tsChannels: TTabSheet;
@@ -41,17 +45,31 @@ type
     grdNetworks: TDrawGrid;
     sbMain: TStatusBar;
     tmrUi: TTimer;
+    pmGrid: TPopupMenu;
+    mniCopyRow: TMenuItem;
+    mniCopyAll: TMenuItem;
+    mniSep1: TMenuItem;
+    mniExportCsv: TMenuItem;
+    mniExportXlsx: TMenuItem;
+    dlgSave: TSaveDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edtSearchChange(Sender: TObject);
     procedure cboBandChange(Sender: TObject);
     procedure cboIntervalChange(Sender: TObject);
+    procedure cboGroupChange(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
     procedure chkDarkClick(Sender: TObject);
     procedure grdNetworksDrawCell(Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState);
     procedure grdNetworksMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure grdNetworksKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure mniCopyRowClick(Sender: TObject);
+    procedure mniCopyAllClick(Sender: TObject);
+    procedure mniExportCsvClick(Sender: TObject);
+    procedure mniExportXlsxClick(Sender: TObject);
     procedure tmrUiTimer(Sender: TObject);
   private
     FConfig: TAppConfig;
@@ -66,10 +84,14 @@ type
     procedure DrawHeaderCell(ACol: Integer; const Rect: TRect);
     procedure DrawDataCell(ACol, ARow: Integer; const Rect: TRect;
       Selected: Boolean);
+    procedure DrawGroupCell(ACol, ARow: Integer; const Rect: TRect);
     procedure ViewModelChanged(Sender: TObject);
     procedure ScannerSnapshot(Sender: TObject; ASnapshot: TScanSnapshot);
     procedure ScannerError(Sender: TObject; const AMessage: string);
     procedure ApplyTheme(ADark: Boolean);
+    function ExportHeaders: TArray<string>;
+    function RowToStrings(const AAP: TAccessPoint): TArray<string>;
+    procedure CopyRows(const ARows: TArray<TAccessPoint>);
   end;
 
 var
@@ -80,7 +102,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.IOUtils, System.Math, System.DateUtils,
+  System.IOUtils, System.Math, System.DateUtils, Vcl.Clipbrd,
   WiFi.Services.Logger;
 
 type
@@ -144,6 +166,7 @@ begin
 
   ConfigureIntervalCombo;
   cboBand.ItemIndex := 0;
+  cboGroup.ItemIndex := 0;
 
   BuildColumns;
 
@@ -242,6 +265,7 @@ procedure TfrmMain.DrawHeaderCell(ACol: Integer; const Rect: TRect);
 var
   Cv: TCanvas;
   Txt: string;
+  Rank: Integer;
 begin
   Cv := grdNetworks.Canvas;
   Cv.Brush.Color := StyleServices.GetSystemColor(clBtnFace);
@@ -249,8 +273,16 @@ begin
   Cv.Font.Style := [fsBold];
   Cv.Font.Color := StyleServices.GetSystemColor(clWindowText);
   Txt := COLUMNS[ACol].Title;
-  if FVM.SortColumn = COLUMNS[ACol].Column then
-    if FVM.SortAscending then Txt := Txt + ' ▲' else Txt := Txt + ' ▼';
+  // Multi-sort badge: direction arrow + priority number (1 = primary key).
+  Rank := FVM.SortRank(COLUMNS[ACol].Column);
+  if Rank > 0 then
+  begin
+    if FVM.SortAscendingOf(COLUMNS[ACol].Column) then
+      Txt := Txt + ' ▲'
+    else
+      Txt := Txt + ' ▼';
+    Txt := Txt + IntToStr(Rank);
+  end;
   Cv.TextRect(Rect, Rect.Left + CELL_PAD, Rect.Top + 3, Txt);
   Cv.Font.Style := [];
 end;
@@ -274,7 +306,7 @@ begin
     Cv.FillRect(Rect);
     Exit;
   end;
-  AP := FVM.Visible(Index);
+  AP := FVM.RowData(Index);
 
   if Selected then
     Cv.Brush.Color := StyleServices.GetSystemColor(clHighlight)
@@ -310,11 +342,42 @@ begin
   Cv.Brush.Style := bsSolid;
 end;
 
+procedure TfrmMain.DrawGroupCell(ACol, ARow: Integer; const Rect: TRect);
+var
+  Cv: TCanvas;
+  Index: Integer;
+begin
+  Cv := grdNetworks.Canvas;
+  Index := ARow - 1;
+  // A group header spans the row: every cell gets the band colour; the caption
+  // is drawn only in the first column, so it never fights the other cells.
+  Cv.Brush.Color := StyleServices.GetSystemColor(clBtnFace);
+  Cv.FillRect(Rect);
+  if ACol = 0 then
+  begin
+    Cv.Font.Style := [fsBold];
+    Cv.Font.Color := StyleServices.GetSystemColor(clWindowText);
+    Cv.Brush.Style := bsClear;
+    Cv.TextRect(Rect, Rect.Left + CELL_PAD, Rect.Top + 3, FVM.RowGroupCaption(Index));
+    Cv.Brush.Style := bsSolid;
+    Cv.Font.Style := [];
+  end;
+end;
+
 procedure TfrmMain.grdNetworksDrawCell(Sender: TObject; ACol, ARow: Integer;
   Rect: TRect; State: TGridDrawState);
+var
+  Index: Integer;
 begin
   if ARow = 0 then
-    DrawHeaderCell(ACol, Rect)
+  begin
+    DrawHeaderCell(ACol, Rect);
+    Exit;
+  end;
+  Index := ARow - 1;
+  if (Index >= 0) and (Index < FVM.VisibleCount) and
+     (FVM.RowKind(Index) = drGroup) then
+    DrawGroupCell(ACol, ARow, Rect)
   else
     DrawDataCell(ACol, ARow, Rect, gdSelected in State);
 end;
@@ -325,8 +388,9 @@ var
   Col, Row: Integer;
 begin
   grdNetworks.MouseToCell(X, Y, Col, Row);
+  // Shift-click a header to add/flip a secondary sort key.
   if (Row = 0) and (Col >= 0) and (Col <= High(COLUMNS)) then
-    FVM.SortBy(COLUMNS[Col].Column);
+    FVM.SortBy(COLUMNS[Col].Column, ssShift in Shift);
 end;
 
 procedure TfrmMain.ViewModelChanged(Sender: TObject);
@@ -347,7 +411,7 @@ begin
     FSignal.UpdateData(FVM.Report);
 
   sbMain.SimpleText := Format('%d networks  •  %d shown  •  adapter: %s  •  last scan %s',
-    [FVM.TotalNetworks, FVM.VisibleCount,
+    [FVM.TotalNetworks, Length(FVM.VisibleDataRows),
      IfThen(FVM.AdapterName = '', '(none)', FVM.AdapterName),
      FormatDateTime('hh:nn:ss', FVM.LastScan)]);
 end;
@@ -377,6 +441,18 @@ begin
     3: FVM.BandFilter := wb6GHz;
   else
     FVM.BandFilter := wbUnknown;
+  end;
+end;
+
+procedure TfrmMain.cboGroupChange(Sender: TObject);
+begin
+  case cboGroup.ItemIndex of
+    1: FVM.GroupField := gfBand;
+    2: FVM.GroupField := gfSecurity;
+    3: FVM.GroupField := gfVendor;
+    4: FVM.GroupField := gfChannel;
+  else
+    FVM.GroupField := gfNone;
   end;
 end;
 
@@ -430,6 +506,136 @@ end;
 procedure TfrmMain.tmrUiTimer(Sender: TObject);
 begin
   // Reserved for a live "x seconds ago" indicator; no-op in Phase 1.
+end;
+
+{ export / copy helpers }
+
+function TfrmMain.ExportHeaders: TArray<string>;
+var
+  I: Integer;
+begin
+  SetLength(Result, Length(COLUMNS));
+  for I := 0 to High(COLUMNS) do
+    Result[I] := COLUMNS[I].Title;
+end;
+
+function TfrmMain.RowToStrings(const AAP: TAccessPoint): TArray<string>;
+var
+  I: Integer;
+begin
+  SetLength(Result, Length(COLUMNS));
+  for I := 0 to High(COLUMNS) do
+    Result[I] := CellText(AAP, I);
+end;
+
+procedure TfrmMain.CopyRows(const ARows: TArray<TAccessPoint>);
+var
+  SB: TStringBuilder;
+  AP: TAccessPoint;
+  Fields: TArray<string>;
+  I: Integer;
+begin
+  // Tab-separated (header + rows) so it pastes straight into Excel.
+  SB := TStringBuilder.Create;
+  try
+    SB.Append(string.Join(#9, ExportHeaders)).Append(sLineBreak);
+    for AP in ARows do
+    begin
+      Fields := RowToStrings(AP);
+      for I := 0 to High(Fields) do
+      begin
+        if I > 0 then
+          SB.Append(#9);
+        SB.Append(Fields[I]);
+      end;
+      SB.Append(sLineBreak);
+    end;
+    Clipboard.AsText := SB.ToString;
+  finally
+    SB.Free;
+  end;
+  sbMain.SimpleText := Format('Copied %d row(s) to the clipboard.', [Length(ARows)]);
+end;
+
+procedure TfrmMain.grdNetworksKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if (Key = Ord('C')) and (ssCtrl in Shift) then
+  begin
+    mniCopyRowClick(nil);
+    Key := 0;
+  end;
+end;
+
+procedure TfrmMain.mniCopyRowClick(Sender: TObject);
+var
+  Index: Integer;
+begin
+  Index := grdNetworks.Row - 1;
+  if (Index < 0) or (Index >= FVM.VisibleCount) or
+     (FVM.RowKind(Index) <> drData) then
+  begin
+    sbMain.SimpleText := 'Select a data row to copy.';
+    Exit;
+  end;
+  CopyRows([FVM.RowData(Index)]);
+end;
+
+procedure TfrmMain.mniCopyAllClick(Sender: TObject);
+begin
+  CopyRows(FVM.VisibleDataRows);
+end;
+
+procedure TfrmMain.mniExportCsvClick(Sender: TObject);
+var
+  Rows: TArray<TArray<string>>;
+  Data: TArray<TAccessPoint>;
+  I: Integer;
+begin
+  dlgSave.Title := 'Export to CSV';
+  dlgSave.Filter := 'CSV files (*.csv)|*.csv|All files (*.*)|*.*';
+  dlgSave.DefaultExt := 'csv';
+  dlgSave.FileName := 'wifi-networks.csv';
+  if not dlgSave.Execute then
+    Exit;
+
+  Data := FVM.VisibleDataRows;
+  SetLength(Rows, Length(Data));
+  for I := 0 to High(Data) do
+    Rows[I] := RowToStrings(Data[I]);
+  try
+    TExportService.ExportCsv(dlgSave.FileName, ExportHeaders, Rows);
+    sbMain.SimpleText := Format('Exported %d rows to %s', [Length(Data), dlgSave.FileName]);
+  except
+    on E: Exception do
+      sbMain.SimpleText := 'CSV export failed: ' + E.Message;
+  end;
+end;
+
+procedure TfrmMain.mniExportXlsxClick(Sender: TObject);
+var
+  Rows: TArray<TArray<string>>;
+  Data: TArray<TAccessPoint>;
+  I: Integer;
+begin
+  dlgSave.Title := 'Export to Excel';
+  dlgSave.Filter := 'Excel workbook (*.xlsx)|*.xlsx|All files (*.*)|*.*';
+  dlgSave.DefaultExt := 'xlsx';
+  dlgSave.FileName := 'wifi-networks.xlsx';
+  if not dlgSave.Execute then
+    Exit;
+
+  Data := FVM.VisibleDataRows;
+  SetLength(Rows, Length(Data));
+  for I := 0 to High(Data) do
+    Rows[I] := RowToStrings(Data[I]);
+  try
+    TExportService.ExportXlsx(dlgSave.FileName, ExportHeaders, Rows);
+    sbMain.SimpleText := Format('Exported %d rows to %s', [Length(Data), dlgSave.FileName]);
+  except
+    on E: Exception do
+      sbMain.SimpleText := 'Excel export failed: ' + E.Message;
+  end;
 end;
 
 end.

@@ -13,7 +13,7 @@ interface
 uses
   DUnitX.TestFramework,
   WiFi.Models, WiFi.Engine.Channels, WiFi.Engine.Analysis, WiFi.Api.Wlan,
-  WiFi.Services.History;
+  WiFi.Services.History, WiFi.Services.Export, WiFi.ViewModels.Main;
 
 type
   [TestFixture]
@@ -73,6 +73,33 @@ type
 
     [Test]
     procedure Compare_DetectsAddedRemovedChanged;
+  end;
+
+  [TestFixture]
+  TExportTests = class
+  public
+    [Test]
+    procedure CsvField_QuotesWhenNeeded;
+
+    [Test]
+    [TestCase('A',  '0,A')]
+    [TestCase('Z',  '25,Z')]
+    [TestCase('AA', '26,AA')]
+    procedure ColRef_Letters(AIndex: Integer; const AExpected: string);
+  end;
+
+  [TestFixture]
+  TViewModelTests = class
+  private
+    function MakeAP(const ABssid: string; AChannel: Integer; ABand: TWiFiBand;
+      ARssi: Integer): TAccessPoint;
+    function MakeSnapshot(const APs: array of TAccessPoint): TScanSnapshot;
+  public
+    [Test]
+    procedure Grouping_InsertsBandHeaders;
+
+    [Test]
+    procedure MultiSort_OrdersByPrimaryKey;
   end;
 
 implementation
@@ -382,9 +409,115 @@ begin
   end;
 end;
 
+{ TExportTests }
+
+procedure TExportTests.CsvField_QuotesWhenNeeded;
+begin
+  Assert.AreEqual('plain', TExportService.CsvField('plain'));
+  Assert.AreEqual('"a,b"', TExportService.CsvField('a,b'));
+  Assert.AreEqual('"he said ""hi"""', TExportService.CsvField('he said "hi"'));
+end;
+
+procedure TExportTests.ColRef_Letters(AIndex: Integer; const AExpected: string);
+begin
+  Assert.AreEqual(AExpected, TExportService.ColRef(AIndex));
+end;
+
+{ TViewModelTests }
+
+function TViewModelTests.MakeAP(const ABssid: string; AChannel: Integer;
+  ABand: TWiFiBand; ARssi: Integer): TAccessPoint;
+begin
+  Result := Default(TAccessPoint);
+  Result.SSID := 'net-' + ABssid;
+  Result.BSSID := ABssid;
+  Result.Channel := AChannel;
+  Result.Band := ABand;
+  Result.FrequencyMHz := ChannelToFrequency(AChannel, ABand);
+  Result.Width := cw20;
+  Result.RSSI := ARssi;
+end;
+
+function TViewModelTests.MakeSnapshot(const APs: array of TAccessPoint): TScanSnapshot;
+var
+  List: TAccessPointList;
+  AP: TAccessPoint;
+begin
+  List := TAccessPointList.Create;
+  for AP in APs do
+    List.Add(AP);
+  Result := TScanSnapshot.Create(List, 'Test Adapter');
+end;
+
+procedure TViewModelTests.Grouping_InsertsBandHeaders;
+var
+  VM: TMainViewModel;
+  Snap: TScanSnapshot;
+  I, Groups, DataRows: Integer;
+begin
+  VM := TMainViewModel.Create;
+  try
+    Snap := MakeSnapshot([
+      MakeAP('AA:00:00:00:00:01', 1, wb24GHz, -40),
+      MakeAP('AA:00:00:00:00:02', 6, wb24GHz, -50),
+      MakeAP('AA:00:00:00:00:03', 36, wb5GHz, -60)]);
+    try
+      VM.UpdateFromSnapshot(Snap);
+    finally
+      Snap.Free;
+    end;
+
+    VM.GroupField := gfBand;
+    Groups := 0; DataRows := 0;
+    for I := 0 to VM.VisibleCount - 1 do
+      if VM.RowKind(I) = drGroup then
+        Inc(Groups)
+      else
+        Inc(DataRows);
+
+    Assert.AreEqual(2, Groups, 'one header per band');
+    Assert.AreEqual(3, DataRows, 'all data rows present');
+    Assert.AreEqual(3, Length(VM.VisibleDataRows), 'export sees only data rows');
+  finally
+    VM.Free;
+  end;
+end;
+
+procedure TViewModelTests.MultiSort_OrdersByPrimaryKey;
+var
+  VM: TMainViewModel;
+  Snap: TScanSnapshot;
+  Data: TArray<TAccessPoint>;
+begin
+  VM := TMainViewModel.Create;
+  try
+    Snap := MakeSnapshot([
+      MakeAP('AA:00:00:00:00:01', 11, wb24GHz, -40),
+      MakeAP('AA:00:00:00:00:02', 1, wb24GHz, -50),
+      MakeAP('AA:00:00:00:00:03', 6, wb24GHz, -60)]);
+    try
+      VM.UpdateFromSnapshot(Snap);
+    finally
+      Snap.Free;
+    end;
+
+    VM.SortBy(gcChannel); // ascending by channel
+    Data := VM.VisibleDataRows;
+    Assert.AreEqual(3, Length(Data));
+    Assert.AreEqual(1, Data[0].Channel);
+    Assert.AreEqual(6, Data[1].Channel);
+    Assert.AreEqual(11, Data[2].Channel);
+    Assert.AreEqual(1, VM.SortRank(gcChannel), 'channel is the primary key');
+  finally
+    VM.Free;
+  end;
+end;
+
 initialization
   TDUnitX.RegisterTestFixture(TChannelTests);
   TDUnitX.RegisterTestFixture(TAnalysisTests);
   TDUnitX.RegisterTestFixture(THistoryTests);
+  TDUnitX.RegisterTestFixture(TExportTests);
+  TDUnitX.RegisterTestFixture(TViewModelTests);
 
 end.

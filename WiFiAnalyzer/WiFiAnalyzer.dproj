@@ -78,6 +78,7 @@
         <DCCReference Include="src\services\WiFi.Services.Oui.pas"/>
         <DCCReference Include="src\services\WiFi.Services.Scanner.pas"/>
         <DCCReference Include="src\services\WiFi.Services.History.pas"/>
+        <DCCReference Include="src\services\WiFi.Services.Export.pas"/>
         <DCCReference Include="src\util\WiFi.Util.Format.pas"/>
         <DCCReference Include="src\util\WiFi.Util.Config.pas"/>
         <DCCReference Include="src\viewmodels\WiFi.ViewModels.Main.pas"/>
