@@ -131,6 +131,10 @@ object frmMain: TfrmMain
       Caption = 'Channels'
       ImageIndex = 1
     end
+    object tsSignal: TTabSheet
+      Caption = 'Signal'
+      ImageIndex = 2
+    end
   end
   object sbMain: TStatusBar
     Left = 0

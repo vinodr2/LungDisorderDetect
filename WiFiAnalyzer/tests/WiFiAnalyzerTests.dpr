@@ -26,6 +26,7 @@ uses
   WiFi.Api.Wlan in '..\src\api\WiFi.Api.Wlan.pas',
   WiFi.Engine.Channels in '..\src\engine\WiFi.Engine.Channels.pas',
   WiFi.Engine.Analysis in '..\src\engine\WiFi.Engine.Analysis.pas',
+  WiFi.Services.History in '..\src\services\WiFi.Services.History.pas',
   WiFi.Tests.Engine in 'WiFi.Tests.Engine.pas';
 
 var

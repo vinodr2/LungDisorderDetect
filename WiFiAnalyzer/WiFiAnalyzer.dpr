@@ -23,10 +23,12 @@ uses
   WiFi.Services.Logger in 'src\services\WiFi.Services.Logger.pas',
   WiFi.Services.Oui in 'src\services\WiFi.Services.Oui.pas',
   WiFi.Services.Scanner in 'src\services\WiFi.Services.Scanner.pas',
+  WiFi.Services.History in 'src\services\WiFi.Services.History.pas',
   WiFi.Util.Format in 'src\util\WiFi.Util.Format.pas',
   WiFi.Util.Config in 'src\util\WiFi.Util.Config.pas',
   WiFi.ViewModels.Main in 'src\viewmodels\WiFi.ViewModels.Main.pas',
   WiFi.UI.ChannelsFrame in 'src\ui\WiFi.UI.ChannelsFrame.pas' {frameChannels: TFrame},
+  WiFi.UI.SignalFrame in 'src\ui\WiFi.UI.SignalFrame.pas' {frameSignal: TFrame},
   WiFi.UI.Main in 'src\ui\WiFi.UI.Main.pas' {frmMain};
 
 {$R *.res}

@@ -14,7 +14,7 @@ interface
 
 uses
   System.SysUtils, System.Generics.Collections,
-  WiFi.Models, WiFi.Engine.Analysis;
+  WiFi.Models, WiFi.Engine.Analysis, WiFi.Services.History;
 
 type
   /// <summary>Logical grid columns; also the sort keys.</summary>
@@ -30,6 +30,7 @@ type
     FEngine: TAnalysisEngine;
     FReport: TChannelReport;     // owned; may be nil before first scan
     FSnapshot: TScanSnapshot;    // owned copy used to feed the engine
+    FHistory: THistoryService;   // owned; RSSI time-series + scan history
     FSearchText: string;
     FBandFilter: TWiFiBand;      // wbUnknown == all bands
     FSortColumn: TGridColumn;
@@ -68,6 +69,8 @@ type
     function AllNetworks: TArray<TAccessPoint>;
 
     property Report: TChannelReport read FReport;
+    /// <summary>Shared RSSI/scan history (owned by the view-model).</summary>
+    property History: THistoryService read FHistory;
     property SearchText: string read FSearchText write SetSearchText;
     property BandFilter: TWiFiBand read FBandFilter write SetBandFilter;
     property SortColumn: TGridColumn read FSortColumn;
@@ -90,6 +93,7 @@ begin
   FAll := TAccessPointList.Create;
   FView := TAccessPointList.Create;
   FEngine := TAnalysisEngine.Create;
+  FHistory := THistoryService.Create;
   FBandFilter := wbUnknown;
   FSortColumn := gcRSSI;
   FSortAscending := False; // strongest first by default
@@ -99,6 +103,7 @@ destructor TMainViewModel.Destroy;
 begin
   FReport.Free;
   FSnapshot.Free;
+  FHistory.Free;
   FEngine.Free;
   FView.Free;
   FAll.Free;
@@ -134,6 +139,9 @@ begin
 
   FReport.Free;
   FReport := FEngine.Analyze(FSnapshot);
+
+  // Extend the RSSI time-series and store this scan for comparison.
+  FHistory.RecordSnapshot(FSnapshot);
 
   RebuildView;
   Changed;

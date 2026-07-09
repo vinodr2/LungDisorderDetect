@@ -12,7 +12,8 @@ interface
 
 uses
   DUnitX.TestFramework,
-  WiFi.Models, WiFi.Engine.Channels, WiFi.Engine.Analysis, WiFi.Api.Wlan;
+  WiFi.Models, WiFi.Engine.Channels, WiFi.Engine.Analysis, WiFi.Api.Wlan,
+  WiFi.Services.History;
 
 type
   [TestFixture]
@@ -59,6 +60,19 @@ type
 
     [Test]
     procedure FakeClient_ReturnsSeededData;
+  end;
+
+  [TestFixture]
+  THistoryTests = class
+  private
+    function MakeAP(const ABssid: string; ARssi: Integer): TAccessPoint;
+    function MakeSnapshot(const APs: array of TAccessPoint): TScanSnapshot;
+  public
+    [Test]
+    procedure Series_AppendsAndCapsToCapacity;
+
+    [Test]
+    procedure Compare_DetectsAddedRemovedChanged;
   end;
 
 implementation
@@ -272,8 +286,105 @@ begin
   end;
 end;
 
+{ THistoryTests }
+
+function THistoryTests.MakeAP(const ABssid: string; ARssi: Integer): TAccessPoint;
+begin
+  FillChar(Result, SizeOf(Result), 0);
+  Result.SSID := 'net-' + ABssid;
+  Result.BSSID := ABssid;
+  Result.Vendor := '';
+  Result.Channel := 6;
+  Result.Band := wb24GHz;
+  Result.FrequencyMHz := 2437;
+  Result.Width := cw20;
+  Result.RSSI := ARssi;
+end;
+
+function THistoryTests.MakeSnapshot(const APs: array of TAccessPoint): TScanSnapshot;
+var
+  List: TAccessPointList;
+  AP: TAccessPoint;
+begin
+  List := TAccessPointList.Create;
+  for AP in APs do
+    List.Add(AP);
+  Result := TScanSnapshot.Create(List, 'Test Adapter');
+end;
+
+procedure THistoryTests.Series_AppendsAndCapsToCapacity;
+var
+  Hist: THistoryService;
+  I: Integer;
+  Snap: TScanSnapshot;
+  Series: TArray<TRssiSample>;
+begin
+  Hist := THistoryService.Create(3 {capacity}, 10);
+  try
+    for I := 1 to 5 do
+    begin
+      Snap := MakeSnapshot([MakeAP('AA:00:00:00:00:01', -40 - I)]);
+      try
+        Hist.RecordSnapshot(Snap);
+      finally
+        Snap.Free;
+      end;
+    end;
+    Series := Hist.SeriesFor('AA:00:00:00:00:01');
+    Assert.AreEqual(3, Length(Series), 'series capped to capacity');
+    Assert.AreEqual(-45, Series[High(Series)].RSSI, 'newest sample retained');
+  finally
+    Hist.Free;
+  end;
+end;
+
+procedure THistoryTests.Compare_DetectsAddedRemovedChanged;
+var
+  Hist: THistoryService;
+  SnapA, SnapB: TScanSnapshot;
+  Rows: TArray<TComparisonRow>;
+  Row: TComparisonRow;
+  FoundAdded, FoundRemoved, FoundChanged: Boolean;
+begin
+  Hist := THistoryService.Create(50, 10);
+  try
+    // A: keep + drop.   B: keep(changed rssi) + add.
+    SnapA := MakeSnapshot([
+      MakeAP('AA:00:00:00:00:01', -50),
+      MakeAP('AA:00:00:00:00:02', -60)]);
+    SnapB := MakeSnapshot([
+      MakeAP('AA:00:00:00:00:01', -55),
+      MakeAP('AA:00:00:00:00:03', -70)]);
+    try
+      Hist.RecordSnapshot(SnapA);
+      Hist.RecordSnapshot(SnapB);
+    finally
+      SnapA.Free;
+      SnapB.Free;
+    end;
+
+    Rows := Hist.Compare(0, 1);
+    FoundAdded := False; FoundRemoved := False; FoundChanged := False;
+    for Row in Rows do
+    begin
+      if (Row.BSSID = 'AA:00:00:00:00:03') and (Row.Status = csAdded) then
+        FoundAdded := True;
+      if (Row.BSSID = 'AA:00:00:00:00:02') and (Row.Status = csRemoved) then
+        FoundRemoved := True;
+      if (Row.BSSID = 'AA:00:00:00:00:01') and (Row.Status = csChanged) then
+        FoundChanged := True;
+    end;
+    Assert.IsTrue(FoundAdded, 'network 03 added');
+    Assert.IsTrue(FoundRemoved, 'network 02 removed');
+    Assert.IsTrue(FoundChanged, 'network 01 changed RSSI');
+  finally
+    Hist.Free;
+  end;
+end;
+
 initialization
   TDUnitX.RegisterTestFixture(TChannelTests);
   TDUnitX.RegisterTestFixture(TAnalysisTests);
+  TDUnitX.RegisterTestFixture(THistoryTests);
 
 end.

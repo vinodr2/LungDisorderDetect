@@ -21,7 +21,7 @@ uses
   Vcl.ExtCtrls, Vcl.Grids, Vcl.ComCtrls, Vcl.Themes, Vcl.Styles,
   WiFi.Models, WiFi.Util.Format,
   WiFi.ViewModels.Main, WiFi.Services.Scanner, WiFi.Services.Oui,
-  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.UI.ChannelsFrame;
+  WiFi.Api.Wlan, WiFi.Util.Config, WiFi.UI.ChannelsFrame, WiFi.UI.SignalFrame;
 
 type
   TfrmMain = class(TForm)
@@ -37,6 +37,7 @@ type
     pgcMain: TPageControl;
     tsNetworks: TTabSheet;
     tsChannels: TTabSheet;
+    tsSignal: TTabSheet;
     grdNetworks: TDrawGrid;
     sbMain: TStatusBar;
     tmrUi: TTimer;
@@ -58,6 +59,7 @@ type
     FScanner: TScannerService;
     FVM: TMainViewModel;
     FChannels: TframeChannels;
+    FSignal: TframeSignal;
     procedure BuildColumns;
     procedure ConfigureIntervalCombo;
     function CellText(const AAP: TAccessPoint; ACol: Integer): string;
@@ -154,6 +156,12 @@ begin
   FChannels := TframeChannels.Create(Self);
   FChannels.Parent := tsChannels;
   FChannels.Align := alClient;
+
+  // Signal Visualization tab (Phase 3): live RSSI graph, gauges, comparison.
+  FSignal := TframeSignal.Create(Self);
+  FSignal.Parent := tsSignal;
+  FSignal.Align := alClient;
+  FSignal.SetHistory(FVM.History);
 
   chkDark.Checked := FConfig.DarkMode;
   ApplyTheme(FConfig.DarkMode);
@@ -333,6 +341,10 @@ begin
   // Feed the Channel Analysis tab with the fresh report + full network list.
   if FChannels <> nil then
     FChannels.UpdateData(FVM.Report, FVM.AllNetworks);
+
+  // Feed the Signal Visualization tab (history is updated inside the VM).
+  if FSignal <> nil then
+    FSignal.UpdateData(FVM.Report);
 
   sbMain.SimpleText := Format('%d networks  •  %d shown  •  adapter: %s  •  last scan %s',
     [FVM.TotalNetworks, FVM.VisibleCount,
