@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gmail Reply+</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="pop">
+    <header class="pop-head">
+      <span class="pop-logo">✉️</span>
+      <div>
+        <h1>Gmail Reply+</h1>
+        <p class="pop-sub">Local · no tracking</p>
+      </div>
+    </header>
+
+    <div id="quick" class="pop-list"></div>
+
+    <div class="pop-shortcuts">
+      <h2>Shortcuts</h2>
+      <ul>
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd><span>Convert to Reply All</span></li>
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd><span>Attach original files</span></li>
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd><span>Toggle headers</span></li>
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd><span>Focus subject</span></li>
+      </ul>
+    </div>
+
+    <footer class="pop-foot">
+      <button id="open-options" class="pop-btn">All settings</button>
+      <button id="open-shortcuts" class="pop-link">Rebind shortcuts</button>
+    </footer>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

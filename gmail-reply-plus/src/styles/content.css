@@ -1,0 +1,438 @@
+/* Gmail Reply+ — content UI styles.
+   Scoped under .grp- to avoid clashing with Gmail. Uses Google Sans / Roboto to
+   match Gmail, with light + dark themes and a compact density. */
+
+:root {
+  --grp-accent: #1a73e8;
+  --grp-accent-hover: #1765cc;
+  --grp-bg: #ffffff;
+  --grp-bg-sub: #f1f3f4;
+  --grp-border: #dadce0;
+  --grp-text: #202124;
+  --grp-text-sub: #5f6368;
+  --grp-danger: #d93025;
+  --grp-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px rgba(60, 64, 67, 0.15);
+  --grp-radius: 8px;
+  --grp-gap: 6px;
+}
+
+/* Dark mode: honour OS preference and Gmail's own dark background. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grp-bg: #2b2c2f;
+    --grp-bg-sub: #3c4043;
+    --grp-border: #5f6368;
+    --grp-text: #e8eaed;
+    --grp-text-sub: #9aa0a6;
+    --grp-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.grp-container,
+.grp-container *,
+.grp-modal,
+.grp-modal *,
+.grp-toast,
+.grp-toast * {
+  box-sizing: border-box;
+  font-family: "Google Sans", Roboto, Arial, sans-serif;
+}
+
+/* ---------- toolbar container ---------- */
+.grp-container {
+  margin: 4px 0 8px;
+  border: 1px solid var(--grp-border);
+  border-radius: var(--grp-radius);
+  background: var(--grp-bg);
+  color: var(--grp-text);
+  overflow: hidden;
+}
+
+.grp-subject-bar,
+.grp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--grp-gap);
+  padding: 6px 8px;
+}
+
+.grp-subject-bar {
+  background: var(--grp-bg-sub);
+  border-bottom: 1px solid var(--grp-border);
+}
+
+.grp-subject-label,
+.grp-stat,
+.grp-stat-sep {
+  font-size: 12px;
+  color: var(--grp-text-sub);
+}
+
+.grp-tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: var(--grp-gap);
+  margin-right: 2px;
+  border-right: 1px solid var(--grp-border);
+}
+.grp-tool-group:last-of-type {
+  border-right: none;
+}
+
+/* ---------- buttons ---------- */
+.grp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--grp-text);
+  background: var(--grp-bg);
+  border: 1px solid var(--grp-border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.grp-btn:hover {
+  background: var(--grp-bg-sub);
+}
+.grp-btn:active {
+  transform: translateY(0.5px);
+}
+.grp-btn:focus-visible {
+  outline: 2px solid var(--grp-accent);
+  outline-offset: 1px;
+}
+.grp-btn-primary {
+  color: #fff;
+  background: var(--grp-accent);
+  border-color: var(--grp-accent);
+}
+.grp-btn-primary:hover {
+  background: var(--grp-accent-hover);
+}
+.grp-btn-small {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+.grp-btn-tool .grp-btn-icon {
+  font-size: 13px;
+}
+.grp-btn-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.grp-btn-disabled:hover {
+  background: var(--grp-accent);
+}
+
+.grp-badge {
+  min-width: 16px;
+  padding: 1px 5px;
+  font-size: 11px;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  color: inherit;
+}
+.grp-btn:not(.grp-btn-primary) .grp-badge {
+  background: var(--grp-bg-sub);
+  color: var(--grp-text-sub);
+}
+.grp-badge-hidden {
+  display: none;
+}
+
+/* ---------- stats ---------- */
+.grp-stats-slot {
+  margin-left: auto;
+}
+.grp-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 6px;
+}
+
+/* ---------- reply info ---------- */
+.grp-info {
+  border-top: 1px solid var(--grp-border);
+  padding: 4px 8px 8px;
+  background: var(--grp-bg);
+}
+.grp-info-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--grp-text-sub);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.grp-info-caret {
+  font-size: 10px;
+}
+.grp-info-body {
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+}
+.grp-info-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  font-size: 12px;
+}
+.grp-info-label {
+  color: var(--grp-text-sub);
+}
+.grp-info-value {
+  color: var(--grp-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- attachment assistant ---------- */
+.grp-assist {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--grp-border);
+  background: #fef7e0;
+  color: #5f4b12;
+  font-size: 13px;
+}
+@media (prefers-color-scheme: dark) {
+  .grp-assist {
+    background: #3a340f;
+    color: #f7e9a8;
+  }
+}
+.grp-assist-text {
+  flex: 1;
+}
+
+/* ---------- subject highlight ---------- */
+.grp-subject-changed {
+  box-shadow: inset 0 -2px 0 var(--grp-accent);
+  background: rgba(26, 115, 232, 0.06);
+}
+
+/* ---------- modal ---------- */
+.grp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(32, 33, 36, 0.5);
+}
+.grp-modal {
+  width: min(440px, 92vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--grp-bg);
+  color: var(--grp-text);
+  border-radius: 12px;
+  box-shadow: var(--grp-shadow);
+  overflow: hidden;
+}
+.grp-modal-wide {
+  width: min(560px, 94vw);
+}
+.grp-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--grp-border);
+}
+.grp-modal-title {
+  font-size: 15px;
+  font-weight: 500;
+  flex: 1;
+}
+.grp-modal-close {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: var(--grp-text-sub);
+  cursor: pointer;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+}
+.grp-modal-close:hover {
+  background: var(--grp-bg-sub);
+}
+.grp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--grp-border);
+}
+.grp-modal-status {
+  padding: 0 16px 8px;
+  font-size: 12px;
+  color: var(--grp-text-sub);
+}
+.grp-status-warn {
+  color: var(--grp-danger);
+}
+
+/* ---------- attachment picker ---------- */
+.grp-att-list {
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+.grp-att-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.grp-att-row:hover {
+  background: var(--grp-bg-sub);
+}
+.grp-att-all {
+  margin: 4px 8px 0;
+  font-weight: 500;
+}
+.grp-att-icon {
+  font-size: 18px;
+}
+.grp-att-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.grp-att-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grp-att-sub {
+  font-size: 11px;
+  color: var(--grp-text-sub);
+}
+
+/* ---------- recipient manager ---------- */
+.grp-rm-count {
+  font-size: 12px;
+  color: var(--grp-text-sub);
+}
+.grp-rm-search,
+.grp-rm-paste {
+  margin: 10px 16px 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid var(--grp-border);
+  border-radius: 8px;
+  background: var(--grp-bg);
+  color: var(--grp-text);
+}
+.grp-rm-list {
+  overflow-y: auto;
+  padding: 8px 16px;
+  flex: 1;
+}
+.grp-rm-group-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--grp-text-sub);
+  margin: 8px 0 2px;
+}
+.grp-rm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+.grp-rm-item:hover {
+  background: var(--grp-bg-sub);
+}
+.grp-rm-dup .grp-rm-email {
+  color: var(--grp-danger);
+}
+.grp-rm-email {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grp-rm-remove {
+  border: none;
+  background: none;
+  color: var(--grp-text-sub);
+  cursor: pointer;
+}
+.grp-rm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+
+/* ---------- toast ---------- */
+.grp-toast-container {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.grp-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--grp-text);
+  background: var(--grp-bg);
+  border: 1px solid var(--grp-border);
+  border-radius: 10px;
+  box-shadow: var(--grp-shadow);
+  animation: grp-toast-in 0.16s ease-out;
+}
+.grp-toast-error {
+  border-color: var(--grp-danger);
+}
+@keyframes grp-toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- compact density ---------- */
+@media (max-width: 900px) {
+  .grp-btn-label {
+    display: none;
+  }
+  .grp-btn {
+    padding: 6px 8px;
+  }
+}
+
+/* Collapsed headers: dim the emphasis we add, keep Gmail's fields intact. */
+.grp-headers-collapsed .grp-subject-bar {
+  display: none;
+}

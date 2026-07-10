@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail Reply+",
+  "version": "1.0.0",
+  "description": "Make Gmail replies work like Microsoft Outlook — always-visible headers, one-click Reply All, and re-attach original files. Local only.",
+  "minimum_chrome_version": "110",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Gmail Reply+",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "permissions": ["storage"],
+  "host_permissions": ["https://mail.google.com/*"],
+  "commands": {
+    "convert-to-reply-all": {
+      "suggested_key": { "default": "Ctrl+Shift+R" },
+      "description": "Convert the active reply to Reply All"
+    },
+    "attach-original-files": {
+      "suggested_key": { "default": "Ctrl+Shift+A" },
+      "description": "Attach files from the original email"
+    },
+    "toggle-headers": {
+      "suggested_key": { "default": "Ctrl+Shift+H" },
+      "description": "Toggle CC/BCC/Subject header visibility"
+    },
+    "focus-subject": {
+      "suggested_key": { "default": "Ctrl+Shift+S" },
+      "description": "Focus the subject field"
+    }
+  }
+}
